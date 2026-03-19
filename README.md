@@ -62,12 +62,30 @@ Add to `.mcp.json` in your project root:
 
 ## Development
 
-Test tools from the command line:
+### One-off tool calls
+
+Each invocation starts a fresh server (no cache persistence):
 
 ```bash
 uv run fastmcp call src/paprika_mcp/server.py list_categories
 uv run fastmcp call src/paprika_mcp/server.py list_recipes
 uv run fastmcp call src/paprika_mcp/server.py search_recipes '{"query": "chicken"}'
 uv run fastmcp call src/paprika_mcp/server.py get_recipe '{"uid": "some-recipe-uid"}'
+```
+
+### Running a persistent server
+
+Start the server on HTTP so the recipe cache stays warm across calls:
+
+```bash
+uv run fastmcp run src/paprika_mcp/server.py --transport streamable-http --port 8000
+```
+
+Then call tools against the running server:
+
+```bash
+uv run fastmcp call http://localhost:8000/mcp list_recipes
+uv run fastmcp call http://localhost:8000/mcp search_recipes '{"query": "chicken"}'
+uv run fastmcp call http://localhost:8000/mcp get_recipe '{"uid": "some-recipe-uid"}'
 ```
 
