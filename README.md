@@ -62,12 +62,12 @@ Add to `.mcp.json` in your project root:
 
 ## Development
 
-Test with the built-in MCP Inspector:
+Test tools from the command line:
 
 ```bash
-PAPRIKA_EMAIL=you@example.com PAPRIKA_PASSWORD=yourpass \
-  uv run fastmcp dev inspector src/paprika_mcp/server.py:mcp --with-editable .
+uv run fastmcp call src/paprika_mcp/server.py list_categories
+uv run fastmcp call src/paprika_mcp/server.py list_recipes
+uv run fastmcp call src/paprika_mcp/server.py search_recipes '{"query": "chicken"}'
+uv run fastmcp call src/paprika_mcp/server.py get_recipe '{"uid": "some-recipe-uid"}'
 ```
-
-This opens a web UI where you can call each tool interactively.
 
