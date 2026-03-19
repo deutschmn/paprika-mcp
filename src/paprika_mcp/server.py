@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import logging
+import sys
+
 from fastmcp import FastMCP
+
+logging.basicConfig(stream=sys.stderr, level=logging.INFO, format="%(message)s")
+log = logging.getLogger("paprika-mcp")
 
 try:
     from .client import PaprikaClient, get_client
@@ -24,16 +30,23 @@ def _client() -> PaprikaClient:
 def _refresh_cache() -> None:
     """Fetch recipe list and update cache for new/changed recipes."""
     client = _client()
+    log.info("Fetching recipe list...")
     summaries = client.list_recipes()
+    log.info("Found %d recipes, checking for changes...", len(summaries))
     current_uids = set()
+    fetched = 0
 
-    for s in summaries:
+    for i, s in enumerate(summaries):
         uid = s["uid"]
         current_uids.add(uid)
         if _hash_cache.get(uid) != s.get("hash"):
+            log.info("  Fetching recipe %d/%d (uid=%s)...", i + 1, len(summaries), uid[:8])
             recipe = client.get_recipe(uid)
             _recipe_cache[uid] = recipe
             _hash_cache[uid] = s.get("hash", "")
+            fetched += 1
+
+    log.info("Fetched %d new/changed recipes, %d cached", fetched, len(summaries) - fetched)
 
     # Remove deleted recipes
     for uid in list(_recipe_cache):
