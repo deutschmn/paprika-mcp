@@ -587,12 +587,14 @@ source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
     { name = "httpx" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fastmcp", specifier = ">=3.1.1" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
 ]
 
 [[package]]

@@ -8,6 +8,9 @@ import stat
 from pathlib import Path
 
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_URL = "https://www.paprikaapp.com/api"
 TOKEN_PATH = Path.home() / ".paprika-mcp-token.json"
