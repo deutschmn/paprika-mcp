@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import gzip
 import json
@@ -14,6 +15,7 @@ load_dotenv()
 
 BASE_URL = "https://www.paprikaapp.com/api"
 TOKEN_PATH = Path.home() / ".paprika-mcp-token.json"
+MAX_CONCURRENT = 30
 
 
 class PaprikaClient:
@@ -52,28 +54,42 @@ class PaprikaClient:
         self._save_cached_token(token)
         return token
 
-    def _request(self, method: str, path: str) -> dict:
+    def _ensure_token(self) -> str:
         if not self._token:
             self._authenticate()
+        return self._token  # type: ignore[return-value]
+
+    def _request(self, method: str, path: str) -> dict:
+        token = self._ensure_token()
 
         def do_request() -> httpx.Response:
             return httpx.request(
                 method,
                 f"{BASE_URL}{path}",
-                headers={"Authorization": f"Bearer {self._token}"},
+                headers={"Authorization": f"Bearer {token}"},
             )
 
         resp = do_request()
 
-        # Retry once on 401 (expired token)
         if resp.status_code == 401:
             self._token = None
             self._authenticate()
             resp = do_request()
 
         resp.raise_for_status()
+        return self._parse_response(resp)
 
-        # Paprika API returns gzipped JSON in the result field
+    async def _async_request(self, client: httpx.AsyncClient, path: str) -> dict:
+        resp = await client.get(f"{BASE_URL}{path}")
+        if resp.status_code == 401:
+            self._token = None
+            self._authenticate()
+            client.headers["Authorization"] = f"Bearer {self._token}"
+            resp = await client.get(f"{BASE_URL}{path}")
+        resp.raise_for_status()
+        return self._parse_response(resp)
+
+    def _parse_response(self, resp: httpx.Response) -> dict:
         result = resp.json().get("result", [])
         if isinstance(result, list):
             return {"items": [self._decompress(item) if isinstance(item, dict) and "data" in item else item for item in result]}
@@ -97,6 +113,22 @@ class PaprikaClient:
     def get_recipe(self, uid: str) -> dict:
         """Get full recipe details by UID."""
         return self._request("GET", f"/v2/sync/recipe/{uid}/")
+
+    async def get_recipes_batch(self, uids: list[str]) -> list[dict]:
+        """Fetch multiple recipes concurrently."""
+        token = self._ensure_token()
+        sem = asyncio.Semaphore(MAX_CONCURRENT)
+
+        async def fetch_one(client: httpx.AsyncClient, uid: str) -> dict:
+            async with sem:
+                return await self._async_request(client, f"/v2/sync/recipe/{uid}/")
+
+        async with httpx.AsyncClient(
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30.0,
+        ) as client:
+            tasks = [fetch_one(client, uid) for uid in uids]
+            return await asyncio.gather(*tasks)
 
     def list_categories(self) -> list[dict]:
         """Get all recipe categories."""

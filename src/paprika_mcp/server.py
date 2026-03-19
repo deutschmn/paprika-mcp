@@ -27,26 +27,30 @@ def _client() -> PaprikaClient:
     return _client_instance
 
 
-def _refresh_cache() -> None:
+async def _refresh_cache() -> None:
     """Fetch recipe list and update cache for new/changed recipes."""
     client = _client()
     log.info("Fetching recipe list...")
     summaries = client.list_recipes()
-    log.info("Found %d recipes, checking for changes...", len(summaries))
-    current_uids = set()
-    fetched = 0
+    current_uids = {s["uid"] for s in summaries}
 
-    for i, s in enumerate(summaries):
-        uid = s["uid"]
-        current_uids.add(uid)
-        if _hash_cache.get(uid) != s.get("hash"):
-            log.info("  Fetching recipe %d/%d (uid=%s)...", i + 1, len(summaries), uid[:8])
-            recipe = client.get_recipe(uid)
+    # Find recipes that need fetching (new or changed hash)
+    to_fetch = [
+        s["uid"] for s in summaries
+        if _hash_cache.get(s["uid"]) != s.get("hash")
+    ]
+
+    if to_fetch:
+        log.info("Fetching %d/%d recipes concurrently...", len(to_fetch), len(summaries))
+        recipes = await client.get_recipes_batch(to_fetch)
+        for uid, recipe in zip(to_fetch, recipes):
             _recipe_cache[uid] = recipe
-            _hash_cache[uid] = s.get("hash", "")
-            fetched += 1
-
-    log.info("Fetched %d new/changed recipes, %d cached", fetched, len(summaries) - fetched)
+            _hash_cache[uid] = next(
+                s.get("hash", "") for s in summaries if s["uid"] == uid
+            )
+        log.info("Done fetching recipes.")
+    else:
+        log.info("All %d recipes cached, no changes.", len(summaries))
 
     # Remove deleted recipes
     for uid in list(_recipe_cache):
@@ -67,25 +71,25 @@ def _recipe_summary(recipe: dict) -> dict:
 
 
 @mcp.tool()
-def list_recipes() -> list[dict]:
+async def list_recipes() -> list[dict]:
     """List all recipes in your Paprika library. Returns name, uid, categories, and rating for each recipe."""
-    _refresh_cache()
+    await _refresh_cache()
     return [_recipe_summary(r) for r in _recipe_cache.values()]
 
 
 @mcp.tool()
-def get_recipe(uid: str) -> dict:
+async def get_recipe(uid: str) -> dict:
     """Get complete details for a recipe by its UID. Includes ingredients, directions, prep/cook time, servings, notes, source, and more."""
     if uid not in _recipe_cache:
-        recipe = _client().get_recipe(uid)
-        _recipe_cache[uid] = recipe
+        recipes = await _client().get_recipes_batch([uid])
+        _recipe_cache[uid] = recipes[0]
     return _recipe_cache[uid]
 
 
 @mcp.tool()
-def search_recipes(query: str) -> list[dict]:
+async def search_recipes(query: str) -> list[dict]:
     """Search recipes by keyword. Searches across recipe names, ingredients, descriptions, and notes. Returns matching recipes."""
-    _refresh_cache()
+    await _refresh_cache()
     query_lower = query.lower()
     results = []
     for recipe in _recipe_cache.values():
