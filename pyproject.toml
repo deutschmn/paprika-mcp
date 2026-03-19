@@ -1,0 +1,20 @@
+[project]
+name = "paprika-mcp"
+version = "0.1.0"
+description = "MCP server for Paprika Recipe Manager"
+readme = "README.md"
+authors = [
+    { name = "Patrick Deutschmann", email = "patrick.deutschmann@me.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastmcp>=3.1.1",
+    "httpx>=0.28.1",
+]
+
+[project.scripts]
+paprika-mcp = "paprika_mcp.server:main"
+
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10.0"]
+build-backend = "uv_build"

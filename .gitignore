@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.paprika-mcp-token.json
+dist/
+*.egg-info/
+.claude
