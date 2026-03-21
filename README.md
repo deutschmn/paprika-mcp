@@ -68,19 +68,38 @@ The server doesn't store any Paprika passwords. Users authenticate with their ow
 
 ### 1. Deploy to Koyeb
 
-1. Push this repo to GitHub (or use a private fork)
-2. Go to [app.koyeb.com](https://app.koyeb.com) and create a new service
-3. Choose **Docker** as the deployment method
-4. Point it at your repo's `Dockerfile`
-5. Set the region to **Frankfurt** (EU)
-6. Set these environment variables:
-   - `ALLOWED_EMAIL` — the Paprika email allowed to connect
-   - `MCP_TRANSPORT` — `http`
-   - `PORT` — `8000`
-7. Set the exposed port to **8000**
-8. Deploy
+Install the CLI and log in:
 
-Your server URL will be something like `https://your-app-name.koyeb.app/mcp`.
+```bash
+brew install koyeb/tap/koyeb
+koyeb login
+```
+
+Push this repo to GitHub, then deploy:
+
+```bash
+koyeb app create paprika-mcp
+
+koyeb service create paprika-mcp \
+  --app paprika-mcp \
+  --git github.com/deutschmn/paprika-mcp \
+  --git-branch main \
+  --git-builder docker \
+  --regions fra \
+  --port 8000:http \
+  --route /:8000 \
+  --env "MCP_TRANSPORT=http" \
+  --env "PORT=8000" \
+  --env "ALLOWED_EMAIL=you@example.com"
+```
+
+Your server URL will be `https://paprika-mcp-YOUR_USER.koyeb.app/mcp`.
+
+Check status:
+
+```bash
+koyeb service list --app paprika-mcp
+```
 
 ### 2. Connect from Claude (mobile/web)
 
