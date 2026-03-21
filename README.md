@@ -60,6 +60,52 @@ Add to `.mcp.json` in your project root:
 }
 ```
 
+## Remote deployment (Koyeb)
+
+Deploy as a Docker container on [Koyeb](https://www.koyeb.com) (free tier, Frankfurt EU region) so you can use it from Claude on your phone.
+
+The server doesn't store any Paprika passwords. Users authenticate with their own Paprika email/password via HTTP Basic auth. The server only allows emails in the `ALLOWED_EMAIL` list — Paprika itself validates the password.
+
+### 1. Deploy to Koyeb
+
+1. Push this repo to GitHub (or use a private fork)
+2. Go to [app.koyeb.com](https://app.koyeb.com) and create a new service
+3. Choose **Docker** as the deployment method
+4. Point it at your repo's `Dockerfile`
+5. Set the region to **Frankfurt** (EU)
+6. Set these environment variables:
+   - `ALLOWED_EMAIL` — the Paprika email allowed to connect
+   - `MCP_TRANSPORT` — `http`
+   - `PORT` — `8000`
+7. Set the exposed port to **8000**
+8. Deploy
+
+Your server URL will be something like `https://your-app-name.koyeb.app/mcp`.
+
+### 2. Connect from Claude (mobile/web)
+
+In Claude.ai, go to **Settings > Connectors > Add Connector** and add your server URL. Use your Paprika email and password when prompted for credentials.
+
+### 3. Test the deployment
+
+```bash
+curl -u "you@example.com:your-paprika-password" https://your-app-name.koyeb.app/mcp
+```
+
+### Local Docker testing
+
+```bash
+docker build -t paprika-mcp .
+docker run --rm -p 8000:8000 \
+  -e ALLOWED_EMAIL="you@example.com" \
+  -e MCP_TRANSPORT=http \
+  paprika-mcp
+```
+
+```bash
+curl -u "you@example.com:your-paprika-password" http://localhost:8000/mcp
+```
+
 ## Development
 
 ### One-off tool calls
