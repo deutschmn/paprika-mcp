@@ -69,7 +69,7 @@ Paprika credentials are stored as env vars on Koyeb. Access is protected by a se
 ### 1. Generate a secret
 
 ```bash
-python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+uvx python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
 ### 2. Deploy to Koyeb
