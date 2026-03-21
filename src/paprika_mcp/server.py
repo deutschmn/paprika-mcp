@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextvars
 import logging
 import os
 import sys
@@ -21,20 +20,11 @@ _client_instance: PaprikaClient | None = None
 _recipe_cache: dict[str, dict] = {}
 _hash_cache: dict[str, str] = {}
 
-# Set by auth middleware in HTTP mode
-_current_password: contextvars.ContextVar[str] = contextvars.ContextVar("current_password")
-
 
 def _client() -> PaprikaClient:
     global _client_instance
-    try:
-        password = _current_password.get()
-        email = os.environ["ALLOWED_EMAIL"]
-        if _client_instance is None or _client_instance.password != password:
-            _client_instance = PaprikaClient(email, password)
-    except LookupError:
-        if _client_instance is None:
-            _client_instance = get_client()
+    if _client_instance is None:
+        _client_instance = get_client()
     return _client_instance
 
 
@@ -116,34 +106,6 @@ def list_categories() -> list[dict]:
     return _client().list_categories()
 
 
-def _auth_middleware():
-    """ASGI middleware that checks email matches ALLOWED_EMAIL and passes password through."""
-    import base64
-
-    from starlette.middleware import Middleware
-    from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.requests import Request
-    from starlette.responses import JSONResponse
-
-    allowed = os.environ.get("ALLOWED_EMAIL", "").lower()
-
-    class EmailAuthMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            auth = request.headers.get("authorization", "")
-            if auth.startswith("Basic "):
-                try:
-                    decoded = base64.b64decode(auth[6:]).decode()
-                    email, password = decoded.split(":", 1)
-                    if email.lower() == allowed:
-                        _current_password.set(password)
-                        return await call_next(request)
-                except Exception:
-                    pass
-            return JSONResponse({"error": "unauthorized"}, status_code=401)
-
-    return Middleware(EmailAuthMiddleware)
-
-
 def main():
     transport = os.environ.get("MCP_TRANSPORT", "stdio")
     if transport == "stdio":
@@ -151,15 +113,14 @@ def main():
     else:
         import uvicorn
 
-        middleware = []
-        allowed = os.environ.get("ALLOWED_EMAIL", "")
-        if allowed:
-            middleware.append(_auth_middleware())
-            log.info("Auth enabled for %s", allowed)
+        secret = os.environ.get("MCP_SECRET", "")
+        path = f"/mcp/{secret}" if secret else "/mcp"
+        if secret:
+            log.info("Serving on secret path: %s", path)
 
         app = mcp.http_app(
             transport="streamable-http",
-            middleware=middleware,
+            path=path,
         )
         port = int(os.environ.get("PORT", "8000"))
         uvicorn.run(app, host="0.0.0.0", port=port)

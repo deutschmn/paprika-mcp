@@ -64,9 +64,15 @@ Add to `.mcp.json` in your project root:
 
 Deploy as a Docker container on [Koyeb](https://www.koyeb.com) (free tier, Frankfurt EU region) so you can use it from Claude on your phone.
 
-The server doesn't store any Paprika passwords. Users authenticate with their own Paprika email/password via HTTP Basic auth. The server only allows emails in the `ALLOWED_EMAIL` list — Paprika itself validates the password.
+Paprika credentials are stored as env vars on Koyeb. Access is protected by a secret URL path — no auth headers needed.
 
-### 1. Deploy to Koyeb
+### 1. Generate a secret
+
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+### 2. Deploy to Koyeb
 
 Install the CLI and log in:
 
@@ -90,10 +96,12 @@ koyeb service create paprika-mcp \
   --route /:8000 \
   --env "MCP_TRANSPORT=http" \
   --env "PORT=8000" \
-  --env "ALLOWED_EMAIL=you@example.com"
+  --env "PAPRIKA_EMAIL=you@example.com" \
+  --env "PAPRIKA_PASSWORD=your-paprika-password" \
+  --env "MCP_SECRET=your-generated-secret"
 ```
 
-Your server URL will be `https://paprika-mcp-YOUR_USER.koyeb.app/mcp`.
+Your server URL will be `https://paprika-mcp-YOUR_USER.koyeb.app/mcp/your-generated-secret`.
 
 Check status:
 
@@ -101,14 +109,14 @@ Check status:
 koyeb service list --app paprika-mcp
 ```
 
-### 2. Connect from Claude (mobile/web)
+### 3. Connect from Claude (mobile/web)
 
-In Claude.ai, go to **Settings > Connectors > Add Connector** and add your server URL. Use your Paprika email and password when prompted for credentials.
+In Claude.ai, go to **Settings > Connectors > Add Connector** and paste the full URL including the secret path. No credentials needed.
 
-### 3. Test the deployment
+### 4. Test the deployment
 
 ```bash
-curl -u "you@example.com:your-paprika-password" https://your-app-name.koyeb.app/mcp
+curl https://your-app-name.koyeb.app/mcp/your-secret
 ```
 
 ### Local Docker testing
@@ -116,13 +124,15 @@ curl -u "you@example.com:your-paprika-password" https://your-app-name.koyeb.app/
 ```bash
 docker build -t paprika-mcp .
 docker run --rm -p 8000:8000 \
-  -e ALLOWED_EMAIL="you@example.com" \
+  -e PAPRIKA_EMAIL="you@example.com" \
+  -e PAPRIKA_PASSWORD="your-password" \
   -e MCP_TRANSPORT=http \
+  -e MCP_SECRET="test-secret" \
   paprika-mcp
 ```
 
 ```bash
-curl -u "you@example.com:your-paprika-password" http://localhost:8000/mcp
+curl http://localhost:8000/mcp/test-secret
 ```
 
 ## Development
