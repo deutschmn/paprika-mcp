@@ -15,12 +15,12 @@ cp .env.example .env
 
 ## Tools
 
-| Tool | Description |
-|------|-------------|
-| `list_recipes` | List all recipes (name, uid, categories, rating) |
-| `get_recipe` | Get full recipe details by UID |
-| `search_recipes` | Search recipes by keyword across names, ingredients, descriptions, and notes |
-| `list_categories` | List all recipe categories |
+| Tool              | Description                                                                  |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `list_recipes`    | List all recipes (name, uid, categories, rating)                             |
+| `get_recipe`      | Get full recipe details by UID                                               |
+| `search_recipes`  | Search recipes by keyword across names, ingredients, descriptions, and notes |
+| `list_categories` | List all recipe categories                                                   |
 
 ## Usage with Claude Desktop
 
@@ -125,10 +125,10 @@ curl https://your-app-name.koyeb.app/mcp/your-secret
 ```bash
 docker build -t paprika-mcp .
 docker run --rm -p 8000:8000 \
-  -e PAPRIKA_EMAIL="you@example.com" \
-  -e PAPRIKA_PASSWORD="your-password" \
+  -e PAPRIKA_EMAIL="$PAPRIKA_EMAIL" \
+  -e PAPRIKA_PASSWORD="$PAPRIKA_PASSWORD" \
   -e MCP_TRANSPORT=http \
-  -e MCP_SECRET="test-secret" \
+  -e MCP_SECRET="$MCP_SECRET" \
   paprika-mcp
 ```
 
