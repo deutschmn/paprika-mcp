@@ -132,6 +132,12 @@ def main():
             transport="streamable-http",
             path=path,
         )
+
+        from starlette.responses import PlainTextResponse
+        from starlette.routing import Route
+
+        app.routes.insert(0, Route("/health", lambda r: PlainTextResponse("ok")))
+
         port = int(os.environ.get("PORT", "8000"))
         uvicorn.run(app, host="0.0.0.0", port=port)
 
