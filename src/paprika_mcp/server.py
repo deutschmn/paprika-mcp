@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import sys
 
 from fastmcp import FastMCP
@@ -75,9 +76,18 @@ async def list_recipes() -> list[dict]:
     return [_recipe_summary(r) for r in _recipe_cache.values()]
 
 
+_UID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def _validate_uid(uid: str) -> None:
+    if not uid or len(uid) > 200 or not _UID_RE.match(uid):
+        raise ValueError(f"Invalid recipe UID: {uid!r}")
+
+
 @mcp.tool()
 async def get_recipe(uid: str) -> dict:
     """Get complete details for a recipe by its UID. Includes ingredients, directions, prep/cook time, servings, notes, source, and more."""
+    _validate_uid(uid)
     if uid not in _recipe_cache:
         recipes = await _client().get_recipes_batch([uid])
         _recipe_cache[uid] = recipes[0]
@@ -116,7 +126,7 @@ def main():
         secret = os.environ.get("MCP_SECRET", "")
         path = f"/mcp/{secret}" if secret else "/mcp"
         if secret:
-            log.info("Serving on secret path: %s", path)
+            log.info("Serving on secret path: /mcp/<secret>")
 
         app = mcp.http_app(
             transport="streamable-http",
