@@ -94,6 +94,7 @@ koyeb service create paprika-mcp \
   --regions fra \
   --port 8000:http \
   --route /:8000 \
+  --checks 8000:http:/health \
   --env "MCP_TRANSPORT=http" \
   --env "PORT=8000" \
   --env "PAPRIKA_EMAIL=you@example.com" \
