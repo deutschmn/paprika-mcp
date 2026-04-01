@@ -111,6 +111,14 @@ Check status:
 koyeb service list --app paprika-mcp
 ```
 
+### Updating an existing deployment
+
+To redeploy with the latest code, trigger a new build from the current branch:
+
+```bash
+koyeb service redeploy paprika-mcp/paprika-mcp
+```
+
 ### 3. Connect from Claude (mobile/web)
 
 In Claude.ai, go to **Settings > Connectors > Add Connector** and paste the full URL including the secret path. No credentials needed.
