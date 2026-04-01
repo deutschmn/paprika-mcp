@@ -57,7 +57,7 @@ async def _refresh_cache() -> None:
     for uid in list(_recipe_cache):
         if uid not in current_uids:
             del _recipe_cache[uid]
-            del _hash_cache[uid]
+            _hash_cache.pop(uid, None)
 
 
 def _recipe_summary(recipe: dict) -> dict:
@@ -160,7 +160,8 @@ def create_recipe(
         "categories": [],
     }
     result = _client().create_recipe(recipe)
-    _recipe_cache[uid] = recipe
+    _recipe_cache.clear()
+    _hash_cache.clear()
     return {"uid": uid, "name": name, "result": result}
 
 
