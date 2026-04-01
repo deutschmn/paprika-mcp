@@ -178,6 +178,26 @@ class PaprikaClient:
         compressed = self._compress(recipe)
         return self._post_file_request(f"/v2/sync/recipe/{uid}/", compressed)
 
+    def upload_photo(self, photo_uid: str, photo_bytes: bytes) -> dict:
+        """Upload raw photo bytes for a given photo UID."""
+        token = self._ensure_token()
+
+        def do_request() -> httpx.Response:
+            return httpx.post(
+                f"{BASE_URL}/v2/sync/photo/{photo_uid}/",
+                headers={"Authorization": f"Bearer {token}"},
+                content=photo_bytes,
+                timeout=60.0,
+            )
+
+        resp = do_request()
+        if resp.status_code == 401:
+            self._token = None
+            self._authenticate()
+            resp = do_request()
+        resp.raise_for_status()
+        return resp.json()
+
     def list_categories(self) -> list[dict]:
         """Get all recipe categories."""
         result = self._request("GET", "/v2/sync/categories/")

@@ -127,6 +127,7 @@ def create_recipe(
     source: str = "",
     source_url: str = "",
     rating: int = 0,
+    photo_base64: str = "",
 ) -> dict:
     """Create a new recipe in your Paprika library.
 
@@ -143,8 +144,22 @@ def create_recipe(
         source: Source attribution (e.g. "Grandma's cookbook").
         source_url: URL where the recipe was found.
         rating: Rating from 0 to 5.
+        photo_base64: Optional base64-encoded photo (JPEG or PNG) to attach to the recipe.
     """
+    import base64
+
     uid = str(uuid.uuid4()).upper()
+
+    photo_bytes: bytes | None = None
+    photo_uid: str | None = None
+    photo_filename = ""
+    photo_hash = ""
+    if photo_base64:
+        photo_bytes = base64.b64decode(photo_base64)
+        photo_uid = str(uuid.uuid4()).upper()
+        photo_filename = f"{photo_uid}.jpg"
+        photo_hash = hashlib.sha256(photo_bytes).hexdigest().upper()
+
     recipe = {
         "uid": uid,
         "name": name,
@@ -161,8 +176,8 @@ def create_recipe(
         "source": source,
         "source_url": source_url,
         "image_url": "",
-        "photo": "",
-        "photo_hash": "",
+        "photo": photo_filename,
+        "photo_hash": photo_hash,
         "photo_large": "",
         "scale": "",
         "hash": hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest().upper(),
@@ -175,10 +190,13 @@ def create_recipe(
         "created": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         "photo_url": "",
     }
-    result = _client().create_recipe(recipe)
+    client = _client()
+    client.create_recipe(recipe)
+    if photo_base64:
+        client.upload_photo(photo_uid, photo_bytes)
     _recipe_cache.clear()
     _hash_cache.clear()
-    return {"uid": uid, "name": name, "result": result}
+    return {"uid": uid, "name": name}
 
 
 @mcp.tool()
