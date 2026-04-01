@@ -20,6 +20,7 @@ cp .env.example .env
 | `list_recipes`    | List all recipes (name, uid, categories, rating)                             |
 | `get_recipe`      | Get full recipe details by UID                                               |
 | `search_recipes`  | Search recipes by keyword across names, ingredients, descriptions, and notes |
+| `create_recipe`   | Create a new recipe (name, ingredients, directions, times, etc.)             |
 | `list_categories` | List all recipe categories                                                   |
 
 ## Usage with Claude Desktop
@@ -147,6 +148,7 @@ uv run fastmcp call src/paprika_mcp/server.py list_categories
 uv run fastmcp call src/paprika_mcp/server.py list_recipes
 uv run fastmcp call src/paprika_mcp/server.py search_recipes '{"query": "chicken"}'
 uv run fastmcp call src/paprika_mcp/server.py get_recipe '{"uid": "some-recipe-uid"}'
+uv run fastmcp call src/paprika_mcp/server.py create_recipe '{"name": "Test Recipe", "ingredients": "1 cup flour\n2 eggs", "directions": "Mix and bake."}'
 ```
 
 ### Running a persistent server
@@ -163,5 +165,6 @@ Then call tools against the running server:
 uv run fastmcp call http://localhost:8000/mcp list_recipes
 uv run fastmcp call http://localhost:8000/mcp search_recipes '{"query": "chicken"}'
 uv run fastmcp call http://localhost:8000/mcp get_recipe '{"uid": "some-recipe-uid"}'
+uv run fastmcp call http://localhost:8000/mcp create_recipe '{"name": "Test Recipe", "ingredients": "1 cup flour\n2 eggs", "directions": "Mix and bake."}'
 ```
 
