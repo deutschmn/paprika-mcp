@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import re
 import sys
 import uuid
+from datetime import datetime, timezone
 
 from fastmcp import FastMCP
 
@@ -150,14 +152,28 @@ def create_recipe(
         "directions": directions,
         "description": description,
         "notes": notes,
+        "nutritional_info": "",
+        "servings": servings,
+        "difficulty": "",
         "prep_time": prep_time,
         "cook_time": cook_time,
         "total_time": total_time,
-        "servings": servings,
         "source": source,
         "source_url": source_url,
-        "rating": rating,
+        "image_url": "",
+        "photo": "",
+        "photo_hash": "",
+        "photo_large": "",
+        "scale": "",
+        "hash": hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest().upper(),
         "categories": [],
+        "rating": rating,
+        "in_trash": False,
+        "is_pinned": False,
+        "on_favorites": False,
+        "on_grocery_list": False,
+        "created": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        "photo_url": "",
     }
     result = _client().create_recipe(recipe)
     _recipe_cache.clear()

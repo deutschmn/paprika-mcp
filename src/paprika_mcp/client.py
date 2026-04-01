@@ -110,13 +110,31 @@ class PaprikaClient:
         return gzip.compress(json.dumps(data).encode())
 
     def _post_file_request(self, path: str, payload: bytes) -> dict:
+        """POST gzip-compressed recipe data as multipart form.
+
+        Built manually because httpx files= adds Content-Type: application/octet-stream
+        to the part, which causes the Paprika API to return 500. The API requires
+        a bare multipart part with no Content-Type header on the data field.
+        """
+        import uuid as _uuid
+        boundary = _uuid.uuid4().hex
+        body = (
+            f"--{boundary}\r\n"
+            f"Content-Disposition: form-data; name=data; filename=file; filename*=utf-8''file\r\n"
+            f"\r\n"
+        ).encode() + payload + f"\r\n--{boundary}--\r\n".encode()
+
         token = self._ensure_token()
 
         def do_request() -> httpx.Response:
             return httpx.post(
                 f"{BASE_URL}{path}",
-                headers={"Authorization": f"Bearer {token}"},
-                files={"data": ("file", payload)},
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": f"multipart/form-data; boundary={boundary}",
+                },
+                content=body,
+                timeout=30.0,
             )
 
         resp = do_request()
