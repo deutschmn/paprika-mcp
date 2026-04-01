@@ -105,6 +105,31 @@ class PaprikaClient:
         except Exception:
             return item
 
+    @staticmethod
+    def _compress(data: dict) -> str:
+        raw = json.dumps(data).encode()
+        return base64.b64encode(gzip.compress(raw)).decode()
+
+    def _post_request(self, path: str, data: dict) -> dict:
+        token = self._ensure_token()
+
+        def do_request() -> httpx.Response:
+            return httpx.post(
+                f"{BASE_URL}{path}",
+                headers={"Authorization": f"Bearer {token}"},
+                data=data,
+            )
+
+        resp = do_request()
+
+        if resp.status_code == 401:
+            self._token = None
+            self._authenticate()
+            resp = do_request()
+
+        resp.raise_for_status()
+        return self._parse_response(resp)
+
     def list_recipes(self) -> list[dict]:
         """Get lightweight recipe list (uid + hash only)."""
         result = self._request("GET", "/v2/sync/recipes/")
@@ -129,6 +154,12 @@ class PaprikaClient:
         ) as client:
             tasks = [fetch_one(client, uid) for uid in uids]
             return await asyncio.gather(*tasks)
+
+    def create_recipe(self, recipe: dict) -> dict:
+        """Create or update a recipe. The recipe dict must include a 'uid' field."""
+        uid = recipe["uid"]
+        compressed = self._compress(recipe)
+        return self._post_request(f"/v2/sync/recipe/{uid}/", {"data": compressed})
 
     def list_categories(self) -> list[dict]:
         """Get all recipe categories."""

@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import sys
+import uuid
 
 from fastmcp import FastMCP
 
@@ -108,6 +109,59 @@ async def search_recipes(query: str) -> list[dict]:
         if query_lower in searchable:
             results.append(_recipe_summary(recipe))
     return results
+
+
+@mcp.tool()
+def create_recipe(
+    name: str,
+    ingredients: str = "",
+    directions: str = "",
+    description: str = "",
+    notes: str = "",
+    prep_time: str = "",
+    cook_time: str = "",
+    total_time: str = "",
+    servings: str = "",
+    source: str = "",
+    source_url: str = "",
+    rating: int = 0,
+) -> dict:
+    """Create a new recipe in your Paprika library.
+
+    Args:
+        name: Recipe name (required).
+        ingredients: Ingredients, one per line.
+        directions: Cooking directions/instructions.
+        description: Short description of the recipe.
+        notes: Additional notes.
+        prep_time: Preparation time (e.g. "15 min").
+        cook_time: Cooking time (e.g. "30 min").
+        total_time: Total time (e.g. "45 min").
+        servings: Number of servings (e.g. "4").
+        source: Source attribution (e.g. "Grandma's cookbook").
+        source_url: URL where the recipe was found.
+        rating: Rating from 0 to 5.
+    """
+    uid = str(uuid.uuid4()).upper()
+    recipe = {
+        "uid": uid,
+        "name": name,
+        "ingredients": ingredients,
+        "directions": directions,
+        "description": description,
+        "notes": notes,
+        "prep_time": prep_time,
+        "cook_time": cook_time,
+        "total_time": total_time,
+        "servings": servings,
+        "source": source,
+        "source_url": source_url,
+        "rating": rating,
+        "categories": [],
+    }
+    result = _client().create_recipe(recipe)
+    _recipe_cache[uid] = recipe
+    return {"uid": uid, "name": name, "result": result}
 
 
 @mcp.tool()
