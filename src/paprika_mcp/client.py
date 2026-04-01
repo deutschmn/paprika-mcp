@@ -106,18 +106,17 @@ class PaprikaClient:
             return item
 
     @staticmethod
-    def _compress(data: dict) -> str:
-        raw = json.dumps(data).encode()
-        return base64.b64encode(gzip.compress(raw)).decode()
+    def _compress(data: dict) -> bytes:
+        return gzip.compress(json.dumps(data).encode())
 
-    def _post_request(self, path: str, data: dict) -> dict:
+    def _post_file_request(self, path: str, payload: bytes) -> dict:
         token = self._ensure_token()
 
         def do_request() -> httpx.Response:
             return httpx.post(
                 f"{BASE_URL}{path}",
                 headers={"Authorization": f"Bearer {token}"},
-                data=data,
+                files={"data": ("file", payload)},
             )
 
         resp = do_request()
@@ -159,7 +158,7 @@ class PaprikaClient:
         """Create or update a recipe. The recipe dict must include a 'uid' field."""
         uid = recipe["uid"]
         compressed = self._compress(recipe)
-        return self._post_request(f"/v2/sync/recipe/{uid}/", {"data": compressed})
+        return self._post_file_request(f"/v2/sync/recipe/{uid}/", compressed)
 
     def list_categories(self) -> list[dict]:
         """Get all recipe categories."""
